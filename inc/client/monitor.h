@@ -1,7 +1,7 @@
 #ifndef CNPJ_CLIENT_MONITOR_H
 #define CNPJ_CLIENT_MONITOR_H
 
-#include <./connect.h>
+#include <inc/client/connect.h>
 
 /*获取命令行输入并匹配命令*/
 int get_command();

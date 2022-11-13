@@ -1,5 +1,5 @@
-#include <./inc/connect.h>
-#include <./inc/monitor.h>
+#include <inc/client/connect.h>
+#include <inc/client/monitor.h>
 
 int main(){
     printf("Hello client!\n");

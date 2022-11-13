@@ -1,4 +1,4 @@
-#include <./inc/connect.h>
+#include <inc/server/connect.h>
 
 int main(){
     printf("Hello server!\n");
