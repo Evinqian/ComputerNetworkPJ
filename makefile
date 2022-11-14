@@ -3,7 +3,6 @@ PY := python
 CFLAGS := $(CFLAGS) -O2 -fno-builtin -I . -MD
 CFLAGS += -fno-omit-frame-pointer
 CFLAGS += -std=gnu99
-CFLAGS += -static
 CFLAGS += -Wall -Wno-format -Wno-unused -Werror -gstabs -m32
 
 OBJ_DIR := obj
@@ -48,4 +47,4 @@ test: all
 	$(PY) ./$(TEST)
 
 clean:
-	rm -r $(OB_JDIR)/*.o ftp*
+	rm -r $(OBJ_DIR)/* ftp*

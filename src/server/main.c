@@ -11,17 +11,17 @@ int server_fd;
 
 int main(int argc, char **argv) {
 
-    if (argc != 3 || strcmp(argv[1], "-p") != 0) {
-        printf("Usage: %s -p <port>\n", argv[0]);
+    if (argc != 2) {
+        printf("Usage: %s <port>\n", argv[0]);
         exit(1);
     }
-    int port =  atoi(argv[2]);
-
-    printf("Hello server!\n");
+    int port =  atoi(argv[1]);
 
     init();
+    printf("Hello server!\n");
 
     Listen(port);
+    printf("Listening: %d ...\n", port);
 
     struct sockaddr_in client_addr;
     int conn_fd, client_len;
@@ -32,6 +32,7 @@ int main(int argc, char **argv) {
             printf("Accept error\n");
             exit(1);
         }
+        printf("client_addr: %s\n", inet_ntoa(client_addr.sin_addr));
         struct hostent *hp = gethostbyaddr((const void *) &client_addr.sin_addr.s_addr, 
                     sizeof(client_addr.sin_addr.s_addr), AF_INET);
         char *haddrp = inet_ntoa(client_addr.sin_addr);
@@ -82,7 +83,6 @@ int Listen(int port){
         printf("Listen error\n");
         return -1;
     }
-    printf("Listening: %d ...\n", port);
     return 0;
 }
 

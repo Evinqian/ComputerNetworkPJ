@@ -3,13 +3,18 @@
 
 #include <stdio.h>
 
-/*连接到在本地端口port*/
-void connect(int port);
+/* 客户端文件描述符 */
+extern int client_fd;
 
-/*接收一个字符串*/
+void init();
+
+/* 连接到host:port */
+int Connect(char *host, int port);
+
+/* 接收一个字符串 */
 char* receive();
 
-/*发送一个字符串，返回发送长度*/
-int send(char* bytes);
+/* 发送一个字符串，返回发送长度 */
+int Send(char* bytes);
 
 #endif
