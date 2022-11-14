@@ -9,7 +9,7 @@ extern int client_fd;
 void init();
 
 /* 连接到host:port */
-int Connect(char *host, int port);
+int Connect(char *IP, char *port);
 
 /* 接收一个字符串 */
 char* receive();

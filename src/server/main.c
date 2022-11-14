@@ -6,6 +6,8 @@
 #include <sys/types.h>
 #include <netdb.h>
 #include <arpa/inet.h> 
+// #include "inc/csapp.h"
+#define MAXLEN 1024
 
 int server_fd;
 
@@ -18,37 +20,42 @@ int main(int argc, char **argv) {
     int port =  atoi(argv[1]);
 
     init();
-    printf("Hello server!\n");
+    printf("ftp-server>Hello server!\n");
 
     Listen(port);
-    printf("Listening: %d ...\n", port);
+    printf("ftp-server>Listening to %d ...\n", port);
 
     struct sockaddr_in client_addr;
-    int conn_fd, client_len;
+    int conn_fd;
+    int client_len = sizeof(client_addr);
+
+    char buf[MAXLEN];
 
     while (1) {
+        // 与请求方建立连接
         conn_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_len);
+        printf("ftp-server>");
         if (conn_fd < 0) {
             printf("Accept error\n");
             exit(1);
         }
-        printf("client_addr: %s\n", inet_ntoa(client_addr.sin_addr));
-        struct hostent *hp = gethostbyaddr((const void *) &client_addr.sin_addr.s_addr, 
-                    sizeof(client_addr.sin_addr.s_addr), AF_INET);
-        char *haddrp = inet_ntoa(client_addr.sin_addr);
-        printf("Server connected to %s (%s)\n", hp->h_name, haddrp);
-        if (close(conn_fd) < 0) {
-            printf("Close error\n");
+
+        printf("Server connected to %s\n", inet_ntoa(client_addr.sin_addr));
+
+        // 读取数据
+        int n;
+        while((n = read(conn_fd, buf, MAXLEN)) != 0) {
+            printf("ftp-server>");
+            if (n < 0) {
+                printf("Read error\n");
+                exit(1);
+            }
+            printf("Received %d bytes: %s", n, buf);
+            if (close(conn_fd) < 0) {
+                printf("Close error\n");
+            }
         }
     }
-
-    char* res = receive();
-
-    if(!Send(res)){
-        printf("send failed!\n");
-    }
-
-    end_session();
     return 0;
 }
 
@@ -70,10 +77,12 @@ void init(){
 
 int Listen(int port){
     struct sockaddr_in server_addr;
+
     memset(&server_addr, 0, sizeof(server_addr));
     server_addr.sin_family = AF_INET;
     server_addr.sin_addr.s_addr = htonl(INADDR_ANY);
     server_addr.sin_port = htons((unsigned short) port);
+    
     if (bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
         printf("Bind error\n");
         exit(1);

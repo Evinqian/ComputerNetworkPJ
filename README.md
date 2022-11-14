@@ -3,7 +3,7 @@
 ## 运行客户端
 ```bash
     make ftp
-    ./ftp <hostname> <port>
+    ./ftp <IP> <port>
 ```
 ## 运行服务端
 ```bash

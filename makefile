@@ -16,11 +16,10 @@ CLIENT_DIR := client
 # TODO
 # 完成新的.c文件后需要在这里补充文件名
 SERVER_SRC_FILES :=  src/server/main.c
-CLIENT_SRC_FILES :=  src/client/main.c
+CLIENT_SRC_FILES :=  src/client/main.c 
 
-SERVER_OBJ_FILES := $(patsubst $(SRC_DIR)/$(SERVER_DIR)/%.c, $(OBJ_DIR)/$(SERVER_DIR)/%.o, $(SERVER_SRC_FILES))
-CLIENT_OBJ_FILES := $(patsubst $(SRC_DIR)/$(CLIENT_DIR)/%.c, $(OBJ_DIR)/$(CLIENT_DIR)/%.o, $(CLIENT_SRC_FILES))
-
+SERVER_OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SERVER_SRC_FILES))
+CLIENT_OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CLIENT_SRC_FILES))
 all: ftp ftp-server
 
 ftp: $(CLIENT_OBJ_FILES)
@@ -31,12 +30,7 @@ ftp-server: $(SERVER_OBJ_FILES)
 	@echo + cc[SERVER] $<
 	$(CC) $(CFLAGS) -o $@ $< 
 
-$(OBJ_DIR)/$(CLIENT_DIR)/%.o: $(SRC_DIR)/$(CLIENT_DIR)/%.c
-	@echo + cc[CLIENT] $<
-	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -o $@ -c $<
-
-$(OBJ_DIR)/$(SERVER_DIR)/%.o: $(SRC_DIR)/$(SERVER_DIR)/%.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
 	@echo + cc[SERVER] $<
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -o $@ -c $<
