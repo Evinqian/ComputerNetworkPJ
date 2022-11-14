@@ -3,19 +3,22 @@
 
 #include <stdio.h>
 
-/*启动和初始化服务端*/
+/* 服务端文件描述符 */
+extern int server_fd;
+
+/* 启动和初始化服务端 */
 void init();
 
-/*在本地端口port开启端口并监听连接*/
-void listen(int port);
+/* 在本地端口port开启端口并监听连接 */
+int Listen(int port);
 
-/*接收一个字符串*/
+/* 接收一个字符串 */
 char* receive();
 
-/*发送一个字符串，返回发送长度*/
-int send(char* bytes);
+/* 发送一个字符串，返回发送长度 */
+int Send(char* bytes);
 
-/*结束会话*/
+/* 结束会话 */
 int end_session();
 
 #endif

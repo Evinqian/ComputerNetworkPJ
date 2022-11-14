@@ -1,11 +1,16 @@
 # ComputerNetworkPJ
-## Env: Linux
-## run
+## 开发环境: Linux
+## 运行客户端
 ```bash
-    make
+    make ftp
     ./ftp
 ```
-## test
+## 运行服务端
+```bash
+    make ftp-server
+    ./ftp-server
+```
+## 测试
 ```bash
     make test
 ```

@@ -16,11 +16,11 @@ CLIENT_DIR := client
 
 # TODO
 # 完成新的.c文件后需要在这里补充文件名
-SRC_FILES := src/client/main.c \
-			 src/server/main.c
+SERVER_SRC_FILES :=  src/server/main.c
+CLIENT_SRC_FILES :=  src/client/main.c
 
-SERVER_OBJ_FILES := $(patsubst $(SRC_DIR)/$(SERVER_DIR)/%.c, $(OBJ_DIR)/$(SERVER_DIR)/%.o, $(SRC_FILES))
-CLIENT_OBJ_FILES := $(patsubst $(SRC_DIR)/$(CLIENT_DIR)/%.c, $(OBJ_DIR)/$(CLIENT_DIR)/%.o, $(SRC_FILES))
+SERVER_OBJ_FILES := $(patsubst $(SRC_DIR)/$(SERVER_DIR)/%.c, $(OBJ_DIR)/$(SERVER_DIR)/%.o, $(SERVER_SRC_FILES))
+CLIENT_OBJ_FILES := $(patsubst $(SRC_DIR)/$(CLIENT_DIR)/%.c, $(OBJ_DIR)/$(CLIENT_DIR)/%.o, $(CLIENT_SRC_FILES))
 
 all: ftp ftp-server
 
