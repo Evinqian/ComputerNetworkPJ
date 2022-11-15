@@ -5,14 +5,11 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
-#include <sys/types.h> 
-#include <sys/stat.h> 
-#include <fcntl.h>
 #include <arpa/inet.h> 
 #include <inc/client/connect.h>
-#include <inc/client/monitor.h>
+#include <inc/client/command.h>
 #include <inc/io.h>
-#define MAXLEN 1024
+#define MAX_LEN 1024
 
 int client_fd;
 
@@ -25,39 +22,47 @@ int main(int argc, char **argv){
     char *host_name = argv[1];
     char *port = argv[2];
 
+    // 初始化
     init();
     printf("ftp>Hello client!\n");
 
+    // 建立连接
     if ((client_fd = Connect(host_name, port)) < 0) {
         printf("Failed to connect to %s:%d\n", host_name, port);
         exit(1);
     }
     printf("ftp>Connect successfully!\n");
 
-    char buf[MAXLEN];
+    // 等待输入命令
+    char line[MAX_LEN];
     buf_io_t buf_io;
     buf_io_init(&buf_io, client_fd);
 
     while (1) {
         printf("ftp>");
-        if (fgets(buf, MAXLEN, stdin) == NULL && ferror(stdin)) {
+        if (fgets(line, MAX_LEN, stdin) == NULL && ferror(stdin)) {
             break;
         }
+        int argc = 0;
+	    char *argv[MAX_ARGC] = { 0 };
 
-        // 向客户端写
-        int n = write_n(client_fd, buf, strlen(buf));
-        printf("ftp>Wrote %d bytes: %s\n", n, buf);
-
-        // 从服务端读
-        buf_read_line(&buf_io, buf, MAXLEN);
-        printf("ftp>Read %d bytes: %s\n", n, buf);
+        switch (run(line, &argc, argv)){
+            case CMD_UNKNOWN:
+                printf("Unknown command: %s\n", argv[0]);
+                break;
+            case CMD_TOO_MANT_ARGS:
+                printf("Too many argments: %d (max %d)\n", argc, MAX_ARGC);
+                break;
+            case CMD_QUIT:
+                if (close(client_fd) < 0) {
+                    printf("Close error\n");
+                    exit(1);
+                }
+                exit(0);
+            default:
+                break;
+        }
     }
-
-    if (close(client_fd) < 0) {
-        printf("Close error\n");
-        exit(1);
-    }
-    exit(0);
 }
 
 void init(){

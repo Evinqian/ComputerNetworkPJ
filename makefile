@@ -16,7 +16,7 @@ CLIENT_DIR := client
 # TODO
 # 完成新的.c文件后需要在这里补充文件名 
 SERVER_SRC_FILES :=  src/server/main.c src/io.c
-CLIENT_SRC_FILES :=  src/client/main.c src/io.c
+CLIENT_SRC_FILES :=  src/client/main.c src/io.c src/client/command.c
 
 SERVER_OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SERVER_SRC_FILES))
 CLIENT_OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CLIENT_SRC_FILES))

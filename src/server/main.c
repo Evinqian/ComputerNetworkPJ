@@ -7,7 +7,7 @@
 #include <arpa/inet.h> 
 #include <inc/server/connect.h>
 #include <inc/io.h>
-#define MAXLEN 1024
+#define MAX_LEN 1024
 
 int server_fd;
 
@@ -40,7 +40,7 @@ int main(int argc, char **argv) {
     int conn_fd;
     int client_len = sizeof(client_addr);
 
-    char buf[MAXLEN];
+    char buf[MAX_LEN];
 
     while (1) {
         // 与请求方建立连接
@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
         buf_io_t buf_io;
         buf_io_init(&buf_io, conn_fd);
         int n;
-        while((n = buf_read_line(&buf_io, buf, MAXLEN)) != 0) {
+        while((n = buf_read_line(&buf_io, buf, MAX_LEN)) != 0) {
             printf("ftp-server>");
             if (n < 0) {
                 printf("Read error\n");
