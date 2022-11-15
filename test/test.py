@@ -1,7 +1,8 @@
 from testlib import * 
 import re
 
-r = Runner("./ftp")
+r1 = Runner("./ftp", "15441")
+r2 = Runner("./ftp-server", ["localhost", "15441"])
 
 @test(20, title="Hello world")
 def test_hello():

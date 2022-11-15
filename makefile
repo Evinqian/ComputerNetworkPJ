@@ -9,31 +9,31 @@ OBJ_DIR := obj
 SRC_DIR := src
 INC_DIR := inc
 TEST_DIR := test
-TEST := $(TESTDIR)/test.py
+TEST := $(TEST_DIR)/test.py
 SERVER_DIR := server
 CLIENT_DIR := client
 
 # TODO
-# 完成新的.c文件后需要在这里补充文件名
-SERVER_SRC_FILES :=  src/server/main.c
-CLIENT_SRC_FILES :=  src/client/main.c 
+# 完成新的.c文件后需要在这里补充文件名 
+SERVER_SRC_FILES :=  src/server/main.c src/io.c
+CLIENT_SRC_FILES :=  src/client/main.c src/io.c
 
 SERVER_OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SERVER_SRC_FILES))
 CLIENT_OBJ_FILES := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(CLIENT_SRC_FILES))
 all: ftp ftp-server
 
 ftp: $(CLIENT_OBJ_FILES)
-	@echo + cc[CLIENT] $<
-	$(CC) $(CFLAGS) -o $@ $< 
+	@echo + cc[CLIENT] $^
+	$(CC) $(CFLAGS) -o $@ $^
 
 ftp-server: $(SERVER_OBJ_FILES)
-	@echo + cc[SERVER] $<
-	$(CC) $(CFLAGS) -o $@ $< 
+	@echo + cc[SERVER] $^
+	$(CC) $(CFLAGS) -o $@ $^ 
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c
-	@echo + cc[SERVER] $<
+	@echo + cc[SERVER] $^
 	@mkdir -p $(@D)
-	$(CC) $(CFLAGS) -o $@ -c $<
+	$(CC) $(CFLAGS) -o $@ -c $^
 
 test: all
 	@echo $(MAKE) clean

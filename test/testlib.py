@@ -82,11 +82,13 @@ def run_tests():
         sys.exit(1)
 
 class Runner():
-    def __init__(self, bin):
+    def __init__(self, bin, args):
         self.bin = bin
+        self.args = args
         make(self.bin)
   
     def run(self):
+        Popen()
         return Popen(self.bin, stdout=PIPE)
 
     def match(self, r):

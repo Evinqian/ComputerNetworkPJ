@@ -12,7 +12,7 @@ char* pwd();
 
 char* cd(char* dir);
 
-int mkdir(char* dir_name);
+// int mkdir(char* dir_name);
 
 int get(char* filename);
 

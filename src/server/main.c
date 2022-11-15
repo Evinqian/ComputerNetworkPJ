@@ -1,15 +1,26 @@
 #include <unistd.h>
-#include <inc/server/connect.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
 #include <arpa/inet.h> 
-// #include "inc/csapp.h"
+#include <inc/server/connect.h>
+#include <inc/io.h>
 #define MAXLEN 1024
 
 int server_fd;
+
+static char *to_upper(char *s) {
+    char *t = s;
+    while (*t) {
+        if (*t >= 'a' && *t <= 'z') {
+            *t -= 32;
+        }
+        t++;
+    }
+    return s;
+}
 
 int main(int argc, char **argv) {
 
@@ -43,17 +54,22 @@ int main(int argc, char **argv) {
         printf("Server connected to %s\n", inet_ntoa(client_addr.sin_addr));
 
         // 读取数据
+        buf_io_t buf_io;
+        buf_io_init(&buf_io, conn_fd);
         int n;
-        while((n = read(conn_fd, buf, MAXLEN)) != 0) {
+        while((n = buf_read_line(&buf_io, buf, MAXLEN)) != 0) {
             printf("ftp-server>");
             if (n < 0) {
                 printf("Read error\n");
                 exit(1);
             }
             printf("Received %d bytes: %s", n, buf);
-            if (close(conn_fd) < 0) {
-                printf("Close error\n");
-            }
+            // 写回客户端
+            
+            n = write_n(conn_fd, to_upper(buf), n);
+        }
+        if (close(conn_fd) < 0) {
+            printf("Close error\n");
         }
     }
     return 0;

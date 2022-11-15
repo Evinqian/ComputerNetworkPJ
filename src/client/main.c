@@ -5,10 +5,13 @@
 #include <sys/socket.h>
 #include <sys/types.h>
 #include <netdb.h>
+#include <sys/types.h> 
+#include <sys/stat.h> 
+#include <fcntl.h>
 #include <arpa/inet.h> 
 #include <inc/client/connect.h>
 #include <inc/client/monitor.h>
-// #include "inc/csapp.h"
+#include <inc/io.h>
 #define MAXLEN 1024
 
 int client_fd;
@@ -32,18 +35,22 @@ int main(int argc, char **argv){
     printf("ftp>Connect successfully!\n");
 
     char buf[MAXLEN];
+    buf_io_t buf_io;
+    buf_io_init(&buf_io, client_fd);
 
     while (1) {
         printf("ftp>");
-        int n = scanf("%s", buf);
-        printf("ftp>Input %d bytes: %s\n", n, buf);
-
-        n = write(client_fd, buf, 1);
-        if (n < 0) {
-            printf("Write error\n");
-            exit(1);
+        if (fgets(buf, MAXLEN, stdin) == NULL && ferror(stdin)) {
+            break;
         }
+
+        // 向客户端写
+        int n = write_n(client_fd, buf, strlen(buf));
         printf("ftp>Wrote %d bytes: %s\n", n, buf);
+
+        // 从服务端读
+        buf_read_line(&buf_io, buf, MAXLEN);
+        printf("ftp>Read %d bytes: %s\n", n, buf);
     }
 
     if (close(client_fd) < 0) {
