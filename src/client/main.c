@@ -9,7 +9,6 @@
 #include <inc/client/connect.h>
 #include <inc/client/command.h>
 #include <inc/io.h>
-#define MAX_LEN 1024
 
 int client_fd;
 
@@ -40,13 +39,24 @@ int main(int argc, char **argv){
 
     while (1) {
         printf("ftp>");
-        if (fgets(line, MAX_LEN, stdin) == NULL && ferror(stdin)) {
+        if (fgets(line, MAX_LINE, stdin) == NULL && ferror(stdin)) {
             break;
         }
         int argc = 0;
 	    char *argv[MAX_ARGC] = { 0 };
 
-        switch (run(line, &argc, argv)){
+        int r = run(line, &argc, argv);
+        extern char cmd_error_msg[];
+        extern char cmd_msg[];
+        
+        switch (r){
+            case CMD_WRONG_USAGE:
+                print_usage(argv[0]);
+                putchar('\n');
+                break;
+            case CMD_ERROR:
+                printf("%s: %s\n", argv[0], cmd_error_msg);
+                break;
             case CMD_UNKNOWN:
                 printf("Unknown command: %s\n", argv[0]);
                 break;
@@ -60,6 +70,9 @@ int main(int argc, char **argv){
                 }
                 exit(0);
             default:
+                if (strcmp(cmd_msg, "") != 0) {
+                    printf("%s: %s\n", argv[0], cmd_msg);
+                }
                 break;
         }
     }
