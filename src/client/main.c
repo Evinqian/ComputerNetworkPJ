@@ -1,5 +1,4 @@
 #include <unistd.h>
-#include <inc/server/connect.h>
 #include <stdlib.h>
 #include <string.h>
 #include <sys/socket.h>
@@ -7,13 +6,19 @@
 #include <netdb.h>
 #include <arpa/inet.h> 
 #include <inc/client/connect.h>
-#include <inc/client/command.h>
+#include <inc/command.h>
 #include <inc/io.h>
+#include <signal.h>
 
 int client_fd;
 
-int main(int argc, char **argv){
+// 读写时连接断开异常处理
+void SIGPIPE_handler (int signum) {
+    printf("Server refused your connection\n");
+    exit(1);
+}
 
+int main(int argc, char **argv){
     if (argc != 3) {
         printf("Usage: %s <host name> <port>\n", argv[0]);
         exit(1);
@@ -27,30 +32,42 @@ int main(int argc, char **argv){
 
     // 建立连接
     if ((client_fd = Connect(host_name, port)) < 0) {
-        printf("Failed to connect to %s:%d\n", host_name, port);
+        printf("Failed to connect to %s:%s\n", host_name, port);
         exit(1);
     }
-    printf("ftp>Connect successfully!\n");
+    printf("ftp>Successfully connect to %s:%s!\n", host_name, port);
+
+    // 处理连接断开
+    signal(SIGPIPE, SIGPIPE_handler);
 
     // 等待输入命令
-    char line[MAX_LEN];
+    char line[MAX_LINE + 1];
     buf_io_t buf_io;
     buf_io_init(&buf_io, client_fd);
 
     while (1) {
         printf("ftp>");
+        // 等待用户输入命令
         if (fgets(line, MAX_LINE, stdin) == NULL && ferror(stdin)) {
             break;
         }
+        
+        int n = write_n(client_fd, line, strlen(line));
+        printf("Wrote %d bytes: ", n);
+        printf("%s\n", line);
+ 
         int argc = 0;
 	    char *argv[MAX_ARGC] = { 0 };
 
         int r = run(line, &argc, argv);
+        // int n;
         extern char cmd_error_msg[];
         extern char cmd_msg[];
         
-        switch (r){
+        // 根据结果输出到控制台
+        switch (r) {
             case CMD_WRONG_USAGE:
+                printf("Usage: ");
                 print_usage(argv[0]);
                 putchar('\n');
                 break;
@@ -70,6 +87,9 @@ int main(int argc, char **argv){
                 }
                 exit(0);
             default:
+                // 正确执行，将命令发给服务端，由服务端执行
+                // n = write_n(client_fd, line, strlen(line));
+                // printf("Wrote %d bytes: %s\n", n, line);
                 if (strcmp(cmd_msg, "") != 0) {
                     printf("%s: %s\n", argv[0], cmd_msg);
                 }
@@ -79,7 +99,6 @@ int main(int argc, char **argv){
 }
 
 void init(){
-    
     client_fd = socket(AF_INET, SOCK_STREAM, 0);
     if (client_fd < 0) {
         printf("Socket error\n");

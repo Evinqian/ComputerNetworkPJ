@@ -10,9 +10,6 @@
 #define MAX_LINE 1024
 #define MAX_LEN 1024
 
-char cmd_msg[MAX_LEN];
-char cmd_error_msg[MAX_LEN];
-
 /* 根据命令行输入并匹配命令 */
 int run(char *buf, int* argc, char** argv);
 

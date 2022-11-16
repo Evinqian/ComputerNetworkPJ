@@ -3,9 +3,6 @@
 
 #include <stdio.h>
 
-/* 客户端文件描述符 */
-extern int client_fd;
-
 void init();
 
 /* 连接到host:port */

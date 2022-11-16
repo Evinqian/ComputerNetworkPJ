@@ -1,84 +1,14 @@
-#include <inc/client/command.h>
+#include <inc/command.h>
 #include <inc/client/connect.h>
 #include <inc/io.h>
 #include <string.h>
-#include <sys/types.h>    
-#include <sys/stat.h>    
+#include <sys/types.h>     
+#include <sys/socket.h>    
 #include <fcntl.h>
+#include <inc/utils.h>
 
-struct Command {
-	const char *name;
-	const char *desc;
-	int (*func)(int argc, char** argv);
-};
-
-static struct Command commands[] = {
-	{ "ls", "ls", ls },
-	{ "pwd", "pwd", pwd },
-	{ "cd", "cd [remote_direcotry_name]", cd },
-	{ "mkdir", "mkdir [remote_direcotry_name]", Mkdir },
-	{ "get", "get [remote_filename]", get },
-	{ "put", "put [local_filename]", put },
-	{ "delete", "delete [remote_filename]", Delete },
-	{ "quit", "quit", quit }
-};
-
-#define WHITE_SPACE "\t\r\n "
-
-static int parse(char *buf, int *argc, char **argv) {
-	while (1) {
-		while (*buf && strchr(WHITE_SPACE, *buf)) {
-			*buf++ = 0;
-		}
-		if (*buf == 0) {
-			break;
-		}
-		if (*argc == MAX_ARGC - 1) {		// 参数太多
-			return CMD_TOO_MANT_ARGS;;
-		}
-		argv[(*argc)++] = buf;
-		while (*buf && !strchr(WHITE_SPACE, *buf)) {
-			buf++;
-		}
-	}
-	argv[*argc] = 0;
-	return 0;
-}
-
-static struct Command *match(char *name) {
-	int i;
-	for (i = 0; i < sizeof(commands) / sizeof(struct Command); i++) {
-		if (strcmp(name, commands[i].name) == 0) {
-			return &commands[i];
-		}
-	}
-	return NULL;
-}
-
-int print_usage(char *name) {
-	struct Command *command = match(name);
-	if (command == NULL) {
-		return CMD_UNKNOWN;
-	}
-	printf("%s", command->desc);
-	return 0;
-}
-
-int run(char *buf, int* argc, char** argv) {
-	if (parse(buf, argc, argv) == CMD_TOO_MANT_ARGS) {
-		return CMD_TOO_MANT_ARGS;
-	}
-	// 清空信息
-	strcpy(cmd_error_msg, "");
-	strcpy(cmd_msg, "");
-	int i;
-	// 遍历寻找匹配的函数
-	struct Command *command = match(argv[0]);
-	if (command == NULL) {
-		return CMD_UNKNOWN;
-	}
-	return command->func(*argc, argv);
-}
+/* 客户端文件描述符 */
+extern int client_fd;
 
 int ls(int argc, char** argv) {
 	return 0;
@@ -101,46 +31,51 @@ int get(int argc, char** argv) {
 }
 
 int put(int argc, char** argv) {
-	extern int client_fd;
 	if (argc != 2) {
 		return CMD_WRONG_USAGE;
 	}
-	// 打开文件
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
 	char *in_name = argv[1];
+	// 获取文件大小
+	int in_size = get_file_size(in_name);
+	// 打开文件
 	int in_fd = open(in_name, O_RDONLY);
 	if (in_fd < 0) {
-		sprintf(cmd_error_msg, "can't access to '%s': No such file or directory", in_name);
+		sprintf(cmd_error_msg, "Can't access to '%s': No such file or directory", in_name);
 		return CMD_ERROR;
 	}
-	// 去除路径
-	while (1) {
-		char *t = strchr(in_name, '/');
-		if (t == NULL) {
-			break;
-		}
-		in_name = ++t;
-	}
-
-	// TODO
-	// 名字过长有隐患
-	char out_name[MAX_LEN] = "out_";
-	strcat(out_name, in_name);
-	int out_fd = open(out_name, O_WRONLY | O_CREAT, S_IRWXU);
-
+	// 准备缓存区
 	buf_io_t buf_io;
 	buf_io_init(&buf_io, in_fd);
-	char buf[MAX_LEN];
+	char buf[MAX_LEN + 1] = { 0 };
 	int n;
-	int tot = 0;
+	int success_n = 0;
+
+	// 告知发送文件大小
+	sprintf(buf, "%d\n", in_size);
+	n = write_n(client_fd, buf, strlen(buf));
+	if (n < 0) {
+		sprintf(cmd_error_msg, "Write to server error");
+		return CMD_ERROR;
+	}
+
+	// 边读文件边写入服务端
 	while ((n = buf_read_n(&buf_io, buf, MAX_LEN)) != 0) {
 		if (n < 0) {
-			sprintf(cmd_error_msg, "Read error");
+			sprintf(cmd_error_msg, "Read from file error: %s", in_name);
 			return CMD_ERROR;
 		}
-		n = write_n(out_fd, buf, n);
-		tot += n;
+		// 写入
+		n = write_n(client_fd, buf, n);
+		if (n < 0) {
+			sprintf(cmd_error_msg, "Write to server error");
+			return CMD_ERROR;
+		}
+		success_n += n;
 	}
-	sprintf(cmd_msg, "Successfully tranmitted %d bytes.", tot);
+	sprintf(cmd_msg, "Successfully tranmitted %d bytes.", success_n);
 	return 0;
 }
 

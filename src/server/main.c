@@ -6,10 +6,12 @@
 #include <netdb.h>
 #include <arpa/inet.h> 
 #include <inc/server/connect.h>
+#include <inc/command.h>
 #include <inc/io.h>
 #define MAX_LEN 1024
 
 int server_fd;
+int conn_fd;
 
 static char *to_upper(char *s) {
     char *t = s;
@@ -28,7 +30,7 @@ int main(int argc, char **argv) {
         printf("Usage: %s <port>\n", argv[0]);
         exit(1);
     }
-    int port =  atoi(argv[1]);
+    int port = atoi(argv[1]);
 
     init();
     printf("ftp-server>Hello server!\n");
@@ -37,14 +39,14 @@ int main(int argc, char **argv) {
     printf("ftp-server>Listening to %d ...\n", port);
 
     struct sockaddr_in client_addr;
-    int conn_fd;
     int client_len = sizeof(client_addr);
 
-    char buf[MAX_LEN];
+    char buf[MAX_LEN + 1] = { 0 };
 
     while (1) {
         // 与请求方建立连接
         conn_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_len);
+        printf("server/main.c: %d\n", conn_fd);
         printf("ftp-server>");
         if (conn_fd < 0) {
             printf("Accept error\n");
@@ -57,6 +59,7 @@ int main(int argc, char **argv) {
         buf_io_t buf_io;
         buf_io_init(&buf_io, conn_fd);
         int n;
+
         while((n = buf_read_line(&buf_io, buf, MAX_LEN)) != 0) {
             printf("ftp-server>");
             if (n < 0) {
@@ -64,10 +67,13 @@ int main(int argc, char **argv) {
                 exit(1);
             }
             printf("Received %d bytes: %s", n, buf);
-            // 写回客户端
-            
-            n = write_n(conn_fd, to_upper(buf), n);
+
+            // 执行命令
+            int argc = 0;
+	        char *argv[MAX_ARGC] = { 0 };
+            int r = run(buf, &argc, argv);
         }
+        printf("Close connection to %s\n", inet_ntoa(client_addr.sin_addr));
         if (close(conn_fd) < 0) {
             printf("Close error\n");
         }
@@ -75,7 +81,7 @@ int main(int argc, char **argv) {
     return 0;
 }
 
-void init(){
+void init() {
     // AF_INET表示正在使用因特网
     // SOCK_STREAM表示套接字是因特网连接的端点
     server_fd = socket(AF_INET, SOCK_STREAM, 0);

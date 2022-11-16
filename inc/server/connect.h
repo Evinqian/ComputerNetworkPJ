@@ -3,9 +3,6 @@
 
 #include <stdio.h>
 
-/* 服务端描述符 */
-extern int server_fd;
-
 /* 启动和初始化服务端 */
 void init();
 
