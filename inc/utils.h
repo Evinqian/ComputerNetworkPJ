@@ -8,6 +8,7 @@
 #include <sys/socket.h>    
 #include <signal.h>    
 #include <fcntl.h>
+#include <time.h>
 
 /* 获取文件大小 */
 int get_file_size(char *file_name);

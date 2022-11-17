@@ -8,6 +8,13 @@ extern int server_fd;
 /* 当前连接文件描述符 */
 extern int conn_fd;
 
+/* 向客户端发送结束 */
+static int send_fin() {
+	char buf[MAX_LEN + 1] = { 0 };
+	sprintf(buf, "%s\n", CMD_FIN_HEADER);
+	return write_n(conn_fd, buf, strlen(buf));
+}
+
 int ls(int argc, char** argv) {
 	return 0;
 }
@@ -39,7 +46,11 @@ int put(int argc, char** argv) {
 	extern char cmd_error_msg[];
 
 	// 阻塞直到收到文件大小
-	wait_header(conn_fd, CMD_SIZE_HEADER, buf);
+	n = wait_header(conn_fd, CMD_SIZE_HEADER, buf, MAX_TIME);
+	if (n < 0) {
+		sprintf(cmd_error_msg, "Time out (max %d seconds)\n", MAX_TIME);
+		return CMD_ERROR;
+	}
 	size = atoi(buf);
 	printf("Ready to get %d bytes\n", size);
 
@@ -51,7 +62,15 @@ int put(int argc, char** argv) {
 	int out_fd = open(file_name, O_WRONLY | O_CREAT, S_IRWXU);
 	// 成功写入的数量
 	int success_n = 0;
+	// 开始计时
+	clock_t start_time = clock();
 	while (success_n < size) {
+		clock_t cur_time = clock();
+		if ((double)(cur_time - start_time) / CLOCKS_PER_SEC > MAX_TIME) {
+			// 超时
+			sprintf(cmd_error_msg, "Time out (max %d seconds)\n", MAX_TIME);
+			return CMD_ERROR;
+		}
 		int max_len = MAX_LEN;
 		if (max_len > size - success_n) {
 			max_len = size - success_n;
@@ -67,11 +86,14 @@ int put(int argc, char** argv) {
 		}
 		success_n += n;
 		char bar[MAX_LEN + 1];
+		// 打印进度条
 		printf("%s(%d/%d)\n", process_bar((double)success_n / size, 40, bar), success_n, size);
 	}
 	
-	// 成功
+	// 成功，发送FIN
 	printf("Successfully got %d bytes\n", success_n);
+	n = send_fin();
+
 	return 0;
 }
 

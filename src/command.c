@@ -30,7 +30,7 @@ char *process_bar(double process, int length, char *buf) {
 	memset(buf, 0, sizeof(buf));
 	if (process < 0) {
 		process = 0;
-	} else if(process > 1) {
+	} else if (process > 1) {
 		process = 1;
 	}
 	int i;
@@ -91,24 +91,28 @@ char *check_header(char *buf, const char *header) {
 	return NULL;
 }
 
-void wait_header(int fd, const char *header, char *data){
+int wait_header(int fd, const char *header, char *data, int seconds){
 	int n;
 	char buf[MAX_LEN + 1];
 	int cur = 0;
-	char cur_ch = 0;
 	char *tmp = NULL;
+	clock_t start_time = clock();
 	while (1) {
+		clock_t cur_time = clock();
+		if (seconds >= 0 && (double)(cur_time - start_time) / CLOCKS_PER_SEC > seconds) {
+			return -1;
+		}
         n = recv(fd, buf + cur, 1, MSG_DONTWAIT);
 		if (n > 0) {
-			cur_ch = buf[cur];
+			if (buf[cur] == '\n' && (tmp = check_header(buf, header))) {
+				*strchr(tmp, '\n') = 0;
+				if (data) {
+					strcpy(data, tmp);
+				}
+				return 0;
+        	}
 			cur = (cur + n) % MAX_LEN;
 		}
-        if (cur_ch == '\n' && (tmp = check_header(buf, header))) {
-            if (data) {
-				strcpy(data, tmp);
-			}
-			return;
-        }
     }
 }
 

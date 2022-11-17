@@ -28,6 +28,13 @@ static int send_size(int size) {
 	return write_n(client_fd, buf, strlen(buf));
 }
 
+/* 向客户端发送结束 */
+static int send_fin() {
+	char buf[MAX_LEN + 1] = { 0 };
+	sprintf(buf, "%s\n", CMD_FIN_HEADER);
+	return write_n(client_fd, buf, strlen(buf));
+}
+
 int ls(int argc, char** argv) {
 	int r = send_command(argc, argv);
 	return 0;
@@ -103,7 +110,16 @@ int put(int argc, char** argv) {
 		}
 		success_n += n;
 	}
-	sprintf(cmd_msg, "Successfully tranmitted %d bytes.", success_n);
+	printf("Successfully transmitted %d bytes. Waiting server to get..\n.", success_n);
+
+	// 等待服务端下载结束
+	n = wait_header(client_fd, CMD_FIN_HEADER, NULL, MAX_TIME);
+	if (n < 0) {
+		sprintf(cmd_error_msg, "Server get file failed: time out (max %ds)", MAX_TIME);
+		return CMD_ERROR;
+	}
+	sprintf(cmd_msg, "Successfully put %s!\n", in_name);
+
 	return 0;
 }
 

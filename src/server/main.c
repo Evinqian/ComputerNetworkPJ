@@ -13,17 +13,6 @@
 int server_fd;
 int conn_fd;
 
-static char *to_upper(char *s) {
-    char *t = s;
-    while (*t) {
-        if (*t >= 'a' && *t <= 'z') {
-            *t -= 32;
-        }
-        t++;
-    }
-    return s;
-}
-
 int main(int argc, char **argv) {
 
     if (argc != 2) {
@@ -60,11 +49,14 @@ int main(int argc, char **argv) {
         int n;
         char *command = NULL;
 
-        // while((n = buf_read_line(&buf_io, buf, MAX_LEN)) != 0) {
         while (1) {
             // 阻塞，直到读取到命令
-            wait_header(conn_fd, CMD_COMMAND_HEADER, buf);
-            printf("%s>Received command: %s", FTP_SERVER, buf);
+            n = wait_header(conn_fd, CMD_COMMAND_HEADER, buf, -1);  /* 目前不设最大响应时间 */
+            if (n < 0) {
+                // 太长时间未响应，断开连接
+                continue;
+            } 
+            printf("%s>Received command: %s\n", FTP_SERVER, buf);
 
             // 执行命令
             int argc = 0;
