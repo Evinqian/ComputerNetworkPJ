@@ -12,5 +12,11 @@
 ```
 ## 测试
 ```bash
-    make test
+    make
+    Terminal1:~$ ./ftp-server <port>
+    Terminal2:~$ ./ftp <IP> <port>
+    Terminal2:~$ ftp>put test/<file name>
 ```
+test/test1.txt: 文本文件  
+test/test: 可执行文件   
+test/test3.jpg: 图片  
