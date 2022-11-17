@@ -33,10 +33,10 @@ int main(int argc, char **argv) {
     int port = atoi(argv[1]);
 
     init();
-    printf("ftp-server>Hello server!\n");
+    printf("%s>Hello server!\n", FTP_SERVER);
 
     Listen(port);
-    printf("ftp-server>Listening to %d ...\n", port);
+    printf("%s>Listening to %d ...\n", FTP_SERVER, port);
 
     struct sockaddr_in client_addr;
     int client_len = sizeof(client_addr);
@@ -46,8 +46,7 @@ int main(int argc, char **argv) {
     while (1) {
         // 与请求方建立连接
         conn_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_len);
-        printf("server/main.c: %d\n", conn_fd);
-        printf("ftp-server>");
+        printf("%s>", FTP_SERVER);
         if (conn_fd < 0) {
             printf("Accept error\n");
             exit(1);
@@ -59,19 +58,18 @@ int main(int argc, char **argv) {
         buf_io_t buf_io;
         buf_io_init(&buf_io, conn_fd);
         int n;
+        char *command = NULL;
 
-        while((n = buf_read_line(&buf_io, buf, MAX_LEN)) != 0) {
-            printf("ftp-server>");
-            if (n < 0) {
-                printf("Read error\n");
-                exit(1);
-            }
-            printf("Received %d bytes: %s", n, buf);
+        // while((n = buf_read_line(&buf_io, buf, MAX_LEN)) != 0) {
+        while (1) {
+            // 阻塞，直到读取到命令
+            wait_header(conn_fd, CMD_COMMAND_HEADER, buf);
+            printf("%s>Received command: %s", FTP_SERVER, buf);
 
             // 执行命令
             int argc = 0;
 	        char *argv[MAX_ARGC] = { 0 };
-            int r = run(buf, &argc, argv);
+            int r = run_command(buf, &argc, argv);
         }
         printf("Close connection to %s\n", inet_ntoa(client_addr.sin_addr));
         if (close(conn_fd) < 0) {

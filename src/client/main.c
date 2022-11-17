@@ -28,14 +28,14 @@ int main(int argc, char **argv){
 
     // 初始化
     init();
-    printf("ftp>Hello client!\n");
+    printf("%s>Hello client!\n", FTP);
 
     // 建立连接
     if ((client_fd = Connect(host_name, port)) < 0) {
         printf("Failed to connect to %s:%s\n", host_name, port);
         exit(1);
     }
-    printf("ftp>Successfully connect to %s:%s!\n", host_name, port);
+    printf("%s>Successfully connect to %s:%s!\n", FTP, host_name, port);
 
     // 处理连接断开
     signal(SIGPIPE, SIGPIPE_handler);
@@ -46,21 +46,16 @@ int main(int argc, char **argv){
     buf_io_init(&buf_io, client_fd);
 
     while (1) {
-        printf("ftp>");
+        printf("%s>", FTP);
         // 等待用户输入命令
         if (fgets(line, MAX_LINE, stdin) == NULL && ferror(stdin)) {
             break;
         }
-        
-        int n = write_n(client_fd, line, strlen(line));
-        printf("Wrote %d bytes: ", n);
-        printf("%s\n", line);
- 
+
+        // 执行命令
         int argc = 0;
 	    char *argv[MAX_ARGC] = { 0 };
-
-        int r = run(line, &argc, argv);
-        // int n;
+        int r = run_command(line, &argc, argv);
         extern char cmd_error_msg[];
         extern char cmd_msg[];
         
@@ -68,7 +63,7 @@ int main(int argc, char **argv){
         switch (r) {
             case CMD_WRONG_USAGE:
                 printf("Usage: ");
-                print_usage(argv[0]);
+                print_command_usage(argv[0]);
                 putchar('\n');
                 break;
             case CMD_ERROR:
@@ -88,8 +83,6 @@ int main(int argc, char **argv){
                 exit(0);
             default:
                 // 正确执行，将命令发给服务端，由服务端执行
-                // n = write_n(client_fd, line, strlen(line));
-                // printf("Wrote %d bytes: %s\n", n, line);
                 if (strcmp(cmd_msg, "") != 0) {
                     printf("%s: %s\n", argv[0], cmd_msg);
                 }

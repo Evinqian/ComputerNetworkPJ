@@ -1,7 +1,6 @@
 #ifndef CNPJ_SERVER_CONNECT_H
 #define CNPJ_SERVER_CONNECT_H
-
-#include <stdio.h>
+#define FTP_SERVER "ftp-server"
 
 /* 启动和初始化服务端 */
 void init();

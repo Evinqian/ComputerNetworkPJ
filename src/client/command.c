@@ -1,32 +1,55 @@
 #include <inc/command.h>
 #include <inc/client/connect.h>
 #include <inc/io.h>
-#include <string.h>
-#include <sys/types.h>     
-#include <sys/socket.h>    
-#include <fcntl.h>
 #include <inc/utils.h>
 
 /* 客户端文件描述符 */
 extern int client_fd;
 
+/* 向服务端发送命令 */
+static int send_command(int argc, char** argv) {
+	char cmd[MAX_LEN + 1] = { 0 };
+	int i;
+	strcat(cmd, CMD_COMMAND_HEADER);
+	strcat(cmd, argv[0]);
+	for (i = 1; i < argc; i++) {
+		strcat(cmd, " ");
+		strcat(cmd, argv[i]);
+	}
+	strcat(cmd, "\n");
+	return write_n(client_fd, cmd, strlen(cmd));
+}
+
+/* 向服务端发送文件大小 */
+static int send_size(int size) {
+	char buf[MAX_LEN + 1] = { 0 };
+	strcat(buf, CMD_SIZE_HEADER);
+	sprintf(buf + strlen(CMD_SIZE_HEADER), "%d\n", size);
+	return write_n(client_fd, buf, strlen(buf));
+}
+
 int ls(int argc, char** argv) {
+	int r = send_command(argc, argv);
 	return 0;
 }
 
 int pwd(int argc, char** argv) {
+	int r = send_command(argc, argv);
 	return 0;
 }
 
 int cd(int argc, char** argv) {
+	int r = send_command(argc, argv);
 	return 0;
 }
 
 int Mkdir(int argc, char** argv) {
+	int r = send_command(argc, argv);
 	return 0;
 }
 
 int get(int argc, char** argv) {
+	int r = send_command(argc, argv);
 	return 0;
 }
 
@@ -38,8 +61,6 @@ int put(int argc, char** argv) {
 	extern char cmd_error_msg[];
 
 	char *in_name = argv[1];
-	// 获取文件大小
-	int in_size = get_file_size(in_name);
 	// 打开文件
 	int in_fd = open(in_name, O_RDONLY);
 	if (in_fd < 0) {
@@ -53,9 +74,16 @@ int put(int argc, char** argv) {
 	int n;
 	int success_n = 0;
 
+	// 将命令发送给服务端
+	n = send_command(argc, argv);
+	if (n < 0) {
+		sprintf(cmd_error_msg, "Write to server error");
+		return CMD_ERROR;
+	}
+	
 	// 告知发送文件大小
-	sprintf(buf, "%d\n", in_size);
-	n = write_n(client_fd, buf, strlen(buf));
+	int in_size = get_file_size(in_name);
+	n = send_size(in_size);
 	if (n < 0) {
 		sprintf(cmd_error_msg, "Write to server error");
 		return CMD_ERROR;
@@ -80,6 +108,7 @@ int put(int argc, char** argv) {
 }
 
 int Delete(int argc, char** argv) {
+	int r = send_command(argc, argv);
 	return 0;
 }
 

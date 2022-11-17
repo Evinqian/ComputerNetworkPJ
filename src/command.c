@@ -1,10 +1,7 @@
 #include <inc/command.h>
 #include <inc/client/connect.h>
-#include <inc/io.h>
-#include <string.h>
-#include <sys/types.h>    
-#include <sys/stat.h>    
-#include <fcntl.h>
+#include <inc/io.h> 
+#include <inc/utils.h> 
 
 // 错误信息
 char cmd_msg[MAX_LEN];
@@ -29,7 +26,28 @@ static struct Command commands[] = {
 
 #define WHITE_SPACE "\t\r\n "
 
-static int parse(char *buf, int *argc, char **argv) {
+char *process_bar(double process, int length, char *buf) {
+	memset(buf, 0, sizeof(buf));
+	if (process < 0) {
+		process = 0;
+	} else if(process > 1) {
+		process = 1;
+	}
+	int i;
+	strcat(buf, "[");
+	for (i = 0; i < length * process - 1; i++) {
+		strcat(buf, "=");
+	}
+	strcat(buf, ">");
+	for (i++; i < length; i++) {
+		strcat(buf, " ");
+	}
+	strcat(buf, "]");
+	return buf;
+}
+
+/* 解析命令 */
+static int parse_command(char *buf, int *argc, char **argv) {
 	while (1) {
 		while (*buf && strchr(WHITE_SPACE, *buf)) {
 			*buf++ = 0;
@@ -49,6 +67,7 @@ static int parse(char *buf, int *argc, char **argv) {
 	return 0;
 }
 
+/* 寻找匹配的命令 */
 static struct Command *match(char *name) {
 	int i;
 	for (i = 0; i < sizeof(commands) / sizeof(struct Command); i++) {
@@ -59,7 +78,48 @@ static struct Command *match(char *name) {
 	return NULL;
 }
 
-int print_usage(char *name) {
+char *check_header(char *buf, const char *header) {
+	char tmp[MAX_LEN + 1] = { 0 };
+	int n = strlen(header);
+	if (strlen(buf) < n) {
+		return NULL;
+	}
+	strncpy(tmp, buf, n);
+	if (strcmp(tmp, header) == 0) {
+		return buf + n;
+	}
+	return NULL;
+}
+
+void wait_header(int fd, const char *header, char *data){
+	int n;
+	char buf[MAX_LEN + 1];
+	int cur = 0;
+	char cur_ch = 0;
+	char *tmp = NULL;
+	while (1) {
+        n = recv(fd, buf + cur, 1, MSG_DONTWAIT);
+		if (n > 0) {
+			cur_ch = buf[cur];
+			cur = (cur + n) % MAX_LEN;
+		}
+        if (cur_ch == '\n' && (tmp = check_header(buf, header))) {
+            if (data) {
+				strcpy(data, tmp);
+			}
+			return;
+        }
+    }
+}
+
+void add_header(char* buf, const char *header) {
+	char tmp[MAX_LEN + 1] = { 0 };
+	strcat(tmp, header);
+	strcat(tmp, buf);
+	strcpy(buf, tmp);
+}
+
+int print_command_usage(char *name) {
 	struct Command *command = match(name);
 	if (command == NULL) {
 		return CMD_UNKNOWN;
@@ -68,10 +128,10 @@ int print_usage(char *name) {
 	return 0;
 }
 
-int run(char *buf, int* argc, char** argv) {
+int run_command(char *buf, int* argc, char** argv) {
 	char buf_cpy[MAX_LINE] = { 0 };
 	memcpy(buf_cpy, buf, strlen(buf));
-	if (parse(buf_cpy, argc, argv) == CMD_TOO_MANT_ARGS) {
+	if (parse_command(buf_cpy, argc, argv) == CMD_TOO_MANT_ARGS) {
 		return CMD_TOO_MANT_ARGS;
 	}
 

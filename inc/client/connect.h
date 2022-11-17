@@ -1,7 +1,6 @@
 #ifndef CNPJ_CLIENT_CONNECT_H
 #define CNPJ_CLIENT_CONNECT_H
-
-#include <stdio.h>
+#define FTP "ftp"
 
 void init();
 

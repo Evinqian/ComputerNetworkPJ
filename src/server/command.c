@@ -1,11 +1,6 @@
 #include <inc/command.h>
 #include <inc/server/connect.h>
 #include <inc/io.h>
-#include <string.h>
-#include <sys/types.h>    
-#include <sys/stat.h>    
-#include <sys/socket.h>    
-#include <fcntl.h>
 #include <inc/utils.h>
 
 /* 服务端描述符 */
@@ -43,8 +38,8 @@ int put(int argc, char** argv) {
 	extern char cmd_msg[];
 	extern char cmd_error_msg[];
 
-
-	n = buf_read_line(&buf_io, buf, MAX_LINE);
+	// 阻塞直到收到文件大小
+	wait_header(conn_fd, CMD_SIZE_HEADER, buf);
 	size = atoi(buf);
 	printf("Ready to get %d bytes\n", size);
 
@@ -64,18 +59,19 @@ int put(int argc, char** argv) {
 		n = buf_read_n(&buf_io, buf, max_len);
 		if (n < 0) {
 			sprintf(cmd_error_msg, "Read from client failed\n");
-			return -1;
+			return CMD_ERROR;
 		}
 		if (write_n(out_fd, buf, n) != n) {
 			sprintf(cmd_error_msg, "Write to file failed: %s\n", file_name);
-			return -1;
+			return CMD_ERROR;
 		}
 		success_n += n;
-		printf("Got %d bytes (%d/%d)\n", n, success_n, size);
+		char bar[MAX_LEN + 1];
+		printf("%s(%d/%d)\n", process_bar((double)success_n / size, 40, bar), success_n, size);
 	}
 	
 	// 成功
-	printf("Successfully get %d bytes\n", success_n);
+	printf("Successfully got %d bytes\n", success_n);
 	return 0;
 }
 
