@@ -36,22 +36,88 @@ static int send_fin() {
 }
 
 int ls(int argc, char** argv) {
+	char buf[MAX_LEN + 1] = { 0 };
+
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if (argc != 1) {
+		return CMD_WRONG_USAGE;
+	}
+
 	int r = send_command(argc, argv);
+
+	n =  wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME);
+	if(n < 0){
+		sprintf(cmd_error_msg, "mkdir failed");
+		return CMD_ERROR;
+	}
+
+	printf("%s\n", buf);
 	return 0;
 }
 
 int pwd(int argc, char** argv) {
+	char buf[MAX_LEN + 1] = { 0 };
+
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if (argc != 1) {
+		return CMD_WRONG_USAGE;
+	}
+
 	int r = send_command(argc, argv);
+
+	n =  wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME);
+	if(n < 0){
+		sprintf(cmd_error_msg, "mkdir failed");
+		return CMD_ERROR;
+	}
+
+	printf("%s\n", buf);
 	return 0;
 }
 
 int cd(int argc, char** argv) {
+	char buf[MAX_LEN + 1] = { 0 };
+
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
+
 	int r = send_command(argc, argv);
+
+	n =  wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME);
+	if(n < 0 || strlen(buf) != 0){
+		sprintf(cmd_error_msg, "cd failed");
+		return CMD_ERROR;
+	}
+
 	return 0;
 }
 
 int Mkdir(int argc, char** argv) {
+	char buf[MAX_LEN + 1] = { 0 };
+
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
+
 	int r = send_command(argc, argv);
+
+	n =  wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME);
+	if(n < 0 || strlen(buf) != 0){
+		sprintf(cmd_error_msg, "mkdir failed");
+		return CMD_ERROR;
+	}
+
 	return 0;
 }
 
