@@ -8,6 +8,7 @@ extern int server_fd;
 /* 当前连接文件描述符 */
 extern int conn_fd;
 char PWD[1024] = ".";
+
 /*向客户端发送文件大小*/
 static int send_size(int size){
 	char buf[MAX_LEN + 1] = { 0 };
@@ -15,6 +16,13 @@ static int send_size(int size){
 	sprintf(buf + strlen(CMD_SIZE_HEADER), "%d\n", size);
 	return write_n(conn_fd, buf, strlen(buf)); 
 }
+
+/*向客户端发送文件大小*/
+static int send_str(char* str){
+	char buf[MAX_LEN + 1] = { 0 };
+	strcat(buf, CMD_COMMAND_HEADER);
+	sprintf(buf + strlen(CMD_COMMAND_HEADER), "%s\n", str);
+	return write_n(conn_fd, buf, strlen(buf)); 
 
 /* 向客户端发送结束 */
 static int send_fin() {
@@ -25,36 +33,37 @@ static int send_fin() {
 
 int ls(int argc, char** argv) {
 	char ret[1024] = {0};
-    FILE* fp;
-    fp = popen("cd %s\nls" % PWD,"r");
-    fread(ret,1,1024,fp);
-	//TODO:向客户端发送ret
-	send
+	FILE* fp;
+	fp = popen("cd %s\nls" % PWD,"r");
+	fread(ret,1,1024,fp);
+	for(int i = 0;i < strlen(ret);i++){
+		if(ret[i] == '\n') ret[i] = ' ';
+	}//将默认换行符分割改为空格分割以便消息处理
+	send_str(ret);
 	return 0;
 }
 
 int pwd(int argc, char** argv) {
-	//TODO:向客户端发送PWD
+	send_str(PWD);
 	return 0;
 }
 
 int cd(int argc, char** argv) {
-	char ret[1024] = {0};
-    FILE* fp;
-    fp = popen("cd %s\ncd %s" % (PWD, argv[1]),"r");
-    fread(ret,1,1024,fp);
+	FILE* fp;
+	fp = popen("cd %s\ncd %s" % (PWD, argv[1]),"r");
+	fread(ret,1,1024,fp);
 	memset(PWD, 0, sizeof(PWD));
 	strcpy(PWD, ret);	//更新PWD
-	//TODO:向客户端发送ret
+	send_str("");		//返回空字符串表示成功
 	return 0;
 }
 
 int Mkdir(int argc, char** argv) {
 	char ret[1024] = {0};
-    FILE* fp;
-    fp = popen("cd %s\nmkdir %s" % (PWD, argv[1]),"r");
-    fread(ret,1,1024,fp);
-	//TODO:向客户端发送ret
+	FILE* fp;
+	fp = popen("cd %s\nmkdir %s" % (PWD, argv[1]),"r");
+	fread(ret,1,1024,fp);
+	send_str("");		//返回空字符串表示成功
 	return 0;
 }
 
