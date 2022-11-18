@@ -56,7 +56,70 @@ int Mkdir(int argc, char** argv) {
 }
 
 int get(int argc, char** argv) {
+	buf_io_t buf_io;
+	buf_io_init(&buf_io, client_fd);
+	char buf[MAX_LEN + 1] = { 0 };
+	int n;
+	int size;
+
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
+
 	int r = send_command(argc, argv);
+	  
+	// 阻塞直到找到文件
+	n = wait_header(client_fd, CMD_SIZE_HEADER, buf, MAX_TIME);
+	if (n < 0){
+		sprintf(cmd_error_msg, "File not found");
+		return CMD_ERROR;
+	}
+	size = atoi(buf);
+	printf("Ready to get %d bytes\n",size);
+
+	// 写入文件
+	char *file_name = argv[1];
+	// 去除路径
+	get_file_name(&file_name);
+	// 打开/创建写入文件
+	int out_fd = open(file_name, O_WRONLY | O_CREAT, S_IRWXU);
+	// 成功写入的数量
+	int success_n = 0;
+	// 开始计时
+	clock_t start_time = clock();
+	while (success_n < size){
+		clock_t cur_time = clock();
+		if ((double)(cur_time - start_time) / CLOCKS_PER_SEC > MAX_TIME){
+			//超时
+			sprintf(cmd_error_msg, "Time out (max %d second)\n", MAX_TIME);
+			return CMD_ERROR;
+		}
+		int max_len = MAX_LEN;
+		if (max_len > size - success_n){
+			max_len = size - success_n;
+		}
+		n = buf_read_n(&buf_io, buf, max_len);
+		if (n < 0){
+			sprintf(cmd_error_msg, "Read from server failed\n");
+			return CMD_ERROR;
+		}
+		if (write_n(out_fd, buf, n) != n){
+			sprintf(cmd_error_msg, "Write to file failed: %s\n", file_name);
+			return CMD_ERROR;
+		}
+		success_n += n;
+		char bar[MAX_LEN + 1];
+		//打印进度条
+		printf("%s(%d/%d)\n", process_bar((double)success_n / size,40, bar), success_n, size);
+	}
+	
+	// 成功，发送FIN
+	printf("Successfully got %d bytes\n", success_n);
+	n = send_fin();
+
 	return 0;
 }
 
@@ -74,6 +137,7 @@ int put(int argc, char** argv) {
 		sprintf(cmd_error_msg, "Can't access to '%s': No such file or directory", in_name);
 		return CMD_ERROR;
 	}
+
 	// 准备缓存区
 	buf_io_t buf_io;
 	buf_io_init(&buf_io, in_fd);

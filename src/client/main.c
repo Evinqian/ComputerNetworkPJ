@@ -138,10 +138,6 @@ int Connect(char *host_name, char *port){
     } else {   
         return client_fd;
     }
-
-    if (connect(client_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
-        return -1;
-    }
     return 0;
 }
 
