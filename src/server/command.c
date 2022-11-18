@@ -7,7 +7,7 @@
 extern int server_fd;
 /* 当前连接文件描述符 */
 extern int conn_fd;
-
+char PWD[1024] = ".";
 /* 向客户端发送结束 */
 static int send_fin() {
 	char buf[MAX_LEN + 1] = { 0 };
@@ -16,18 +16,37 @@ static int send_fin() {
 }
 
 int ls(int argc, char** argv) {
+	char ret[1024] = {0};
+    FILE* fp;
+    fp = popen("cd %s\nls" % PWD,"r");
+    fread(ret,1,1024,fp);
+	//TODO:向客户端发送ret
+	send
 	return 0;
 }
 
 int pwd(int argc, char** argv) {
+	//TODO:向客户端发送PWD
 	return 0;
 }
 
 int cd(int argc, char** argv) {
+	char ret[1024] = {0};
+    FILE* fp;
+    fp = popen("cd %s\ncd %s" % (PWD, argv[1]),"r");
+    fread(ret,1,1024,fp);
+	memset(PWD, 0, sizeof(PWD));
+	strcpy(PWD, ret);	//更新PWD
+	//TODO:向客户端发送ret
 	return 0;
 }
 
 int Mkdir(int argc, char** argv) {
+	char ret[1024] = {0};
+    FILE* fp;
+    fp = popen("cd %s\nmkdir %s" % (PWD, argv[1]),"r");
+    fread(ret,1,1024,fp);
+	//TODO:向客户端发送ret
 	return 0;
 }
 
