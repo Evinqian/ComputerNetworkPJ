@@ -32,13 +32,14 @@ static int send_fin() {
 }
 
 int ls(int argc, char** argv) {
-	char ret[1024] = {0};
+	char ret[MAX_LEN + 1] = {0}, buf[MAX_LEN + 1] = {0};
 	FILE* fp;
-	fp = popen("cd %s\nls" % PWD,"r");
-	fread(ret,1,1024,fp);
+	sprintf(buf, "ls %s\n", PWD);
+	fp = popen(buf, "r");	//直接ls $(pwd)简化命令调用
+	fread(ret, 1, MAX_LEN, fp);
 	for(int i = 0;i < strlen(ret);i++){
 		if(ret[i] == '\n') ret[i] = ' ';
-	}//将默认换行符分割改为空格分割以便消息处理
+	}	//将默认换行符分割改为空格分割以便消息处理
 	send_str(ret);
 	return 0;
 }
@@ -49,9 +50,11 @@ int pwd(int argc, char** argv) {
 }
 
 int cd(int argc, char** argv) {
+	char buf[MAX_LEN + 1] = {0};
 	FILE* fp;
-	fp = popen("cd %s\ncd %s" % (PWD, argv[1]),"r");
-	fread(ret,1,1024,fp);
+	sprintf(buf, "cd %s\ncd %s\n", PWD, argv[1]);
+	fp = popen(buf, "r");
+	fread(ret, 1, MAX_LEN, fp);
 	memset(PWD, 0, sizeof(PWD));
 	strcpy(PWD, ret);	//更新PWD
 	send_str("");		//返回空字符串表示成功
@@ -59,10 +62,11 @@ int cd(int argc, char** argv) {
 }
 
 int Mkdir(int argc, char** argv) {
-	char ret[1024] = {0};
+	char ret[MAX_LEN + 1] = {0}, buf[MAX_LEN + 1] = {0};
 	FILE* fp;
-	fp = popen("cd %s\nmkdir %s" % (PWD, argv[1]),"r");
-	fread(ret,1,1024,fp);
+	sprintf(buf, "cd %s\nmkdir %s", PWD, argv[1]);
+	fp = popen(buf, "r");
+	fread(ret, 1, MAX_LEN, fp);
 	send_str("");		//返回空字符串表示成功
 	return 0;
 }
