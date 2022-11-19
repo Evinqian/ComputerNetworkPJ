@@ -57,7 +57,7 @@ int main(int argc, char **argv){
         // 执行命令
         int argc = 0;
 	    char *argv[MAX_ARGC] = { 0 };
-        int r = run_command(line, &argc, argv);
+        int r = run_command(client_fd, line, &argc, argv);
         extern char cmd_error_msg[];
         extern char cmd_msg[];
         

@@ -9,7 +9,7 @@ char cmd_error_msg[MAX_LEN];
 struct Command {
 	const char *name;
 	const char *desc;
-	int (*func)(int argc, char** argv);
+	int (*func)(int fd, int argc, char** argv);
 };
 
 static struct Command commands[] = {
@@ -157,7 +157,7 @@ int print_command_usage(char *name) {
 	return 0;
 }
 
-int run_command(char *buf, int* argc, char** argv) {
+int run_command(int fd, char *buf, int* argc, char** argv) {
 	char buf_cpy[MAX_LINE] = { 0 };
 	memcpy(buf_cpy, buf, strlen(buf));
 	if (parse_command(buf_cpy, argc, argv) == CMD_TOO_MANT_ARGS) {
@@ -173,5 +173,5 @@ int run_command(char *buf, int* argc, char** argv) {
 	if (command == NULL) {
 		return CMD_UNKNOWN;
 	}
-	return command->func(*argc, argv);
+	return command->func(fd, *argc, argv);
 }

@@ -11,7 +11,6 @@
 #define MAX_LEN 1024
 
 int server_fd;
-int conn_fd;
 /* 当前目录，~代替根目录 */
 char PWD[MAX_LEN + 1] = "~";
 /* 根目录 */
@@ -38,42 +37,46 @@ int main(int argc, char **argv) {
 
     while (1) {
         // 与请求方建立连接
-        conn_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_len);
-        printf("%s>%s$ ", FTP_SERVER, PWD);
+        int conn_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_len);
         if (conn_fd < 0) {
-            printf("Accept error\n");
-            exit(1);
+            continue;
         }
-
-        printf("Server connected to %s\n", inet_ntoa(client_addr.sin_addr));
-
-        // 读取数据
-        buf_io_t buf_io;
-        buf_io_init(&buf_io, conn_fd);
-        int n;
-        char *command = NULL;
-
-        while (1) {
-            printf("%s>%s$ Waiting for command...\n", FTP_SERVER, PWD);
-            // 阻塞，直到读取到命令
-            n = wait_header(conn_fd, CMD_COMMAND_HEADER, buf, -1);  /* 目前不设最大响应时间 */
-            if (n < 0) {
-                // 太长时间未响应或者客户端断开连接，断开连接
-                break;
-            } 
-            printf("%s>%s$ Received command: %s\n", FTP_SERVER, PWD, buf);
-
-            // 执行命令
-            int argc = 0;
-	        char *argv[MAX_ARGC] = { 0 };
-            int r = run_command(buf, &argc, argv);
-        }
-        printf("Close connection to %s\n", inet_ntoa(client_addr.sin_addr));
-        if (close(conn_fd) < 0) {
-            printf("Close error\n");
+        if (fork() == 0) {
+            pid_t pid = getpid();
+            int r = close(server_fd);
+            printf("%s-%d>%s$ ", FTP_SERVER, pid, PWD);
+            printf("Server connected to %s\n", inet_ntoa(client_addr.sin_addr));
+            // 读取数据
+            int n;
+            while (1) {
+                // 阻塞，直到读取到命令
+                n = wait_header(conn_fd, CMD_COMMAND_HEADER, buf, -1);  /* 目前不设最大响应时间 */
+                if (n < 0) {
+                    // 太长时间未响应或者客户端断开连接，断开连接
+                    break;
+                } 
+                printf("%s-%d>%s$ Received command: %s\n", FTP_SERVER, pid, PWD, buf);
+                // 执行命令
+                int argc = 0;
+                char *argv[MAX_ARGC] = { 0 };
+                int r = run_command(conn_fd, buf, &argc, argv);
+            }
+            printf("%s-%d>%s$ ", FTP_SERVER, pid, PWD);
+            printf("Close connection to %s\n", inet_ntoa(client_addr.sin_addr));
+            if (close(conn_fd) < 0) {
+                printf("Close error\n");
+                exit(1);
+            }
+            exit(0);
+        } else {
+            if (close(conn_fd) < 0) {
+                printf("Close error\n");
+                exit(1);
+            }
         }
     }
-    return 0;
+    close(server_fd);
+    exit(0);
 }
 
 void init() {

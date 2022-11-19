@@ -5,8 +5,6 @@
 
 /* 服务端描述符 */
 extern int server_fd;
-/* 当前连接文件描述符 */
-extern int conn_fd;
 /* 当前目录 */
 extern char PWD[];
 /* 根目录 */
@@ -32,50 +30,56 @@ static char *is_parent(char *dir, char* pa) {
 }
 
 /* 向客户端发送文件大小 */
-static int send_size(int size){
+static int send_size(int fd, int size){
 	char buf[MAX_LEN + 1] = { 0 };
 	strcat(buf, CMD_SIZE_HEADER);
 	sprintf(buf + strlen(CMD_SIZE_HEADER), "%d\n", size);
-	return write_n(conn_fd, buf, strlen(buf)); 
+	return write_n(fd, buf, strlen(buf)); 
 }
 
 /* 向客户端发送字符串 */
-static int send_str(char* str) {
+static int send_str(int fd, char* str) {
 	char buf[MAX_LEN + 1] = { 0 };
 	strcat(buf, CMD_COMMAND_HEADER);
 	strcat(buf, str);
 	strcat(buf, "\n");
-	return write_n(conn_fd, buf, strlen(buf));
+	return write_n(fd, buf, strlen(buf));
 } 
 
 /* 向客户端发送结束 */
-static int send_fin() {
+static int send_fin(int fd) {
 	char buf[MAX_LEN + 1] = {0};
 	sprintf(buf, "%s\n", CMD_FIN_HEADER);
-	return write_n(conn_fd, buf, strlen(buf));
+	return write_n(fd, buf, strlen(buf));
 }
 
-int ls(int argc, char** argv) {
-	char ret[MAX_LEN + 1] = {0};
-	int r = exec(argc, argv, ret);
+int ls(int fd, int argc, char** argv) {
+	char ret[MAX_LEN + 1] = { 0 }, buf[MAX_LEN + 1] = { 0 };
+	int r = exec(argc, argv, buf);
 	
 	// 将默认换行符分割改为空格分割以便消息处理
-	int len = strlen(ret);
-	for(int i = 0; i < len; i++){
-		if(ret[i] == '\n') ret[i] = ' ';
+	int len = strlen(buf);
+	strcat(ret, ".");
+	if (strcmp(PWD, "~") != 0) {
+		strcat(ret, " ..");
 	}
+	strcat(ret, " ");
+	for(int i = 0; i < len; i++){
+		if(buf[i] == '\n') buf[i] = ' ';
+	}
+	strcat(ret, buf);
 	printf("%s: %s\n", argv[0], ret);
-	send_str(ret);
+	send_str(fd, ret);
 	return 0;
 }
 
-int pwd(int argc, char** argv) {
+int pwd(int fd, int argc, char** argv) {
 	printf("%s: %s\n", argv[0], PWD);
-	send_str(PWD);
+	send_str(fd, PWD);
 	return 0;
 }
 
-int cd(int argc, char** argv) {
+int cd(int fd, int argc, char** argv) {
 	char buf[MAX_LEN + 1] = { 0 }, ret[MAX_LEN + 1] = { 0 };
 	int r = exec(argc, argv, ret);
 	printf("%s: %s\n", argv[0], ret);
@@ -99,21 +103,21 @@ int cd(int argc, char** argv) {
 			sprintf(ret, "can't access '%s': No such file or dictory.", argv[1]);
 		}
 	// 返回消息
-	send_str(ret);
+	send_str(fd, ret);
 	// 向客户端发送新路径	
-	send_str(PWD);
+	send_str(fd, PWD);
 	return 0;
 }
 
-int Mkdir(int argc, char** argv) {
+int Mkdir(int fd, int argc, char** argv) {
 	char ret[MAX_LEN + 1] = {0};
 	int r = exec(argc, argv, ret);
 	printf("%s: %s\n", argv[0], ret);
-	r = send_str(ret);
+	r = send_str(fd, ret);
 	return 0;
 }
 
-int get(int argc, char** argv) {
+int get(int fd, int argc, char** argv) {
 	if (argc != 2){
 		return  CMD_WRONG_USAGE;
 	}
@@ -137,30 +141,32 @@ int get(int argc, char** argv) {
 
 	// 告知发送文件大小
 	int in_size = get_file_size(in_name);
-	n = send_size(in_size);
+	n = send_size(fd, in_size);
 	if (n<0){
 		sprintf(cmd_error_msg, "Write to client error");
 		return CMD_ERROR;
 	}
 
 	// 边读文件边写入客户端
+	char bar[MAX_LEN + 1] = { 0 };
 	while ((n = buf_read_n(&buf_io, buf, MAX_LEN)) != 0){
 		if (n < 0){
 			sprintf(cmd_error_msg, "Read from file error: %s", in_name);
 			return CMD_ERROR;
 		}
 		// 写入
-		n = write_n(conn_fd, buf, n);
+		n = write_n(fd, buf, n);
 		if(n < 0){
 			sprintf(cmd_error_msg, "Write to client error");
 			return CMD_ERROR;
 		}
 		success_n += n;
+		printf("%s(%d/%d)\n", process_bar((double)success_n / in_size, 40, bar), success_n, in_size);
 	}
-	printf("Successfully transmitted %d bytes. Waiting client to get..\n", success_n);
+	// printf("Successfully transmitted %d bytes. Waiting client to get..\n", success_n);
 	
 	// 等待服务端下载结束
-	n = wait_header(conn_fd, CMD_FIN_HEADER, NULL, MAX_TIME);
+	n = wait_header(fd, CMD_FIN_HEADER, NULL, MAX_TIME);
 	if (n < 0){
 		sprintf(cmd_error_msg, "Client get file failed: time out (max %ds)", MAX_TIME);
 		return CMD_ERROR;
@@ -170,9 +176,9 @@ int get(int argc, char** argv) {
 	return 0;	
 }
 
-int put(int argc, char **argv) {
+int put(int fd, int argc, char **argv) {
 	buf_io_t buf_io;
-	buf_io_init(&buf_io, conn_fd);
+	buf_io_init(&buf_io, fd);
 	char buf[MAX_LEN + 1] = {0};
 	int n;
 	int size;
@@ -181,7 +187,7 @@ int put(int argc, char **argv) {
 	extern char cmd_error_msg[];
 
 	// 阻塞直到收到文件大小
-	n = wait_header(conn_fd, CMD_SIZE_HEADER, buf, MAX_TIME);
+	n = wait_header(fd, CMD_SIZE_HEADER, buf, MAX_TIME);
 	if (n < 0)
 	{
 		sprintf(cmd_error_msg, "Time out (max %d seconds)\n", MAX_TIME);
@@ -233,15 +239,19 @@ int put(int argc, char **argv) {
 
 	// 成功，发送FIN
 	printf("Successfully got %d bytes\n", success_n);
-	n = send_fin();
+	n = send_fin(fd);
 
 	return 0;
 }
 
-int Delete(int argc, char **argv) {
+int Delete(int fd, int argc, char **argv) {
+	argv[0] = "rm";
+	char ret[MAX_LEN + 1] = { 0 };
+	int r = exec(argc, argv, ret);
+	send_str(fd, ret);
 	return 0;
 }
 
-int quit(int argc, char **argv) {
+int quit(int fd, int argc, char **argv) {
 	return CMD_QUIT;
 }

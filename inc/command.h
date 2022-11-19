@@ -37,7 +37,7 @@ int exec(int argc, char **argv, char *ret);
 int get_pwd(char *buf);
 
 /* 根据命令行输入并匹配命令 */
-int run_command(char *buf, int* argc, char** argv);
+int run_command(int fd, char *buf, int* argc, char** argv);
 
 /* 进度条，当前进度: 0 <= process <= 1 */
 char *process_bar(double process, int length, char *buf);
@@ -51,20 +51,20 @@ int print_command_usage(char *name);
  *  - 如果执行错误，返回CMD_ERROR，并将错误信息放在cmd_error_msg中
  *  - 如果执行正常，返回0，并将信息放在cmd_msg中
  */
-int ls(int argc, char** argv);
+int ls(int fd, int argc, char** argv);
 
-int pwd(int argc, char** argv);
+int pwd(int fd, int argc, char** argv);
 
-int cd(int argc, char** argv);
+int cd(int fd, int argc, char** argv);
 
-int Mkdir(int argc, char** argv);
+int Mkdir(int fd, int argc, char** argv);
 
-int get(int argc, char** argv);
+int get(int fd, int argc, char** argv);
 
-int put(int argc, char** argv);
+int put(int fd, int argc, char** argv);
 
-int Delete(int argc, char** argv);
+int Delete(int fd, int argc, char** argv);
 
-int quit(int argc, char** argv);
+int quit(int fd, int argc, char** argv);
 
 #endif
