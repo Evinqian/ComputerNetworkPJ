@@ -184,7 +184,8 @@ int get(int fd, int argc, char** argv) {
 		//打印进度条
 		printf("%s(%d/%d)\n", process_bar((double)success_n / size,40, bar), success_n, size);
 	}
-	
+	// 关闭文件
+	n = close(out_fd);
 	// 成功，发送FIN
 	printf("Successfully got %d bytes\n", success_n);
 	n = send_fin(fd);
@@ -245,8 +246,8 @@ int put(int fd, int argc, char** argv) {
 		success_n += n;
 		printf("%s(%d/%d)\n", process_bar((double)success_n / in_size, 40, bar), success_n, in_size);
 	}
-	// printf("Successfully transmitted %d bytes. Waiting server to get...\n", success_n);
-
+	// 关闭文件
+	n = close(in_fd);
 	// 等待服务端下载结束
 	n = wait_header(fd, CMD_FIN_HEADER, NULL, MAX_TIME);
 	if (n < 0) {
