@@ -9,8 +9,29 @@ extern int server_fd;
 extern int conn_fd;
 /* 当前目录 */
 extern char PWD[];
+/* 根目录 */
+extern char ROOT[];
 
-/*向客户端发送文件大小*/
+int get_pwd(char *buf) {
+	char *argv[] = { "pwd" }; 
+    int r = exec(1, argv, buf);
+	if (r < 0) {
+		return r;
+	}
+    *strchr(buf, '\n') = 0;
+	return 0;
+}
+
+/* 判断pa是否是dir的父级目录，返回相对父目录的路径 */
+static char *is_parent(char *dir, char* pa) {
+	int n = strlen(pa);
+	if (strlen(dir) >= n && strncmp(dir, pa, n) == 0) {
+		return dir + n;
+	} 
+	return NULL;
+}
+
+/* 向客户端发送文件大小 */
 static int send_size(int size){
 	char buf[MAX_LEN + 1] = { 0 };
 	strcat(buf, CMD_SIZE_HEADER);
@@ -55,18 +76,31 @@ int pwd(int argc, char** argv) {
 }
 
 int cd(int argc, char** argv) {
-	char ret[MAX_LEN + 1] = {0};
+	char buf[MAX_LEN + 1] = { 0 }, ret[MAX_LEN + 1] = { 0 };
 	int r = exec(argc, argv, ret);
 	printf("%s: %s\n", argv[0], ret);
+		// 更改目录
+		if(chdir(argv[1]) < 0) {
+			sprintf(ret, "can't access '%s': No such file or dictory.", argv[1]);
+		}
+		// 获取当前新路经
+		r = get_pwd(buf);
+		// 不在服务器根目录下
+		char *new_pwd;
+		if ((new_pwd = is_parent(buf, ROOT)) != NULL) {
+			// 更新路径
+			strcpy(PWD, "~");
+			strcat(PWD, new_pwd);
+		} else {
+			// 更改回原目录
+			strcpy(buf, ROOT);
+			strcat(buf, PWD + 1);
+			r = chdir(buf);
+			sprintf(ret, "can't access '%s': No such file or dictory.", argv[1]);
+		}
+	// 返回消息
 	send_str(ret);
-	r = chdir(argv[1]);
-
-	// 再次获取当前路径
-	argv[0] = "pwd";
-	r = exec(1, argv, ret);
-	// 更新PWD
-	strcpy(PWD, ret);
-	// 向客户端发送路径	
+	// 向客户端发送新路径	
 	send_str(PWD);
 	return 0;
 }

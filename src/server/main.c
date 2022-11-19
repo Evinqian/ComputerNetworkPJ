@@ -12,7 +12,10 @@
 
 int server_fd;
 int conn_fd;
-char PWD[1024] = "~";
+/* 当前目录，~代替根目录 */
+char PWD[MAX_LEN + 1] = "~";
+/* 根目录 */
+char ROOT[MAX_LEN + 1];
 
 int main(int argc, char **argv) {
 
@@ -86,6 +89,8 @@ void init() {
         printf("Setsockopt error\n");
         exit(1);
     }
+    // 获取根目录
+    int r = get_pwd(ROOT);
     return;
 }
 

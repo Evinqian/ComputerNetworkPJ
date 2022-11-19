@@ -86,7 +86,10 @@ int exec(int argc, char **argv, char *ret) {
 	}
 
 	FILE* fp = popen(buf, "r");
-	int n = fread(ret, 1, MAX_LEN, fp);
+	int n = 0;
+	if (ret != NULL) { 
+		n = fread(ret, 1, MAX_LEN, fp);
+	}
 	if (n < 0) {
 		return -1;
 	}
