@@ -1,17 +1,5 @@
 #include <inc/utils.h>
 
-int timer;
-
-void SIGALRM_handler(int signum) {
-	timer = 0;
-}
-
-void start_timer(int seconds) {
-	signal(SIGALRM, SIGALRM_handler);
-	timer = 1;
-	alarm(seconds);
-}
-
 int get_file_size(char *file_name) {
     struct stat st;
 	int r = stat(file_name, &st);

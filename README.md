@@ -1,5 +1,9 @@
 # ComputerNetworkPJ
 ## 开发环境: Linux
+## 工具
+```bash
+    sudo apt install gcc-multilib
+```
 ## 运行客户端
 ```bash
     make ftp
@@ -13,7 +17,7 @@
 ## 测试
 ```bash
     make
-    Terminal1:~$ ./ftp-server <port>
+    Terminal1:~$ .server/ftp-server <port>
     Terminal2:~$ ./ftp <IP> <port>
     Terminal2:~$ ftp>put test/<file name>
 ```

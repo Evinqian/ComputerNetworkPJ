@@ -11,6 +11,8 @@
 #include <signal.h>
 
 int client_fd;
+/* 当前目录 */
+char PWD[MAX_LEN + 1];
 
 // 读写时连接断开异常处理
 void SIGPIPE_handler (int signum) {
