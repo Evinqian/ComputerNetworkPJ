@@ -36,26 +36,95 @@ static int send_fin() {
 }
 
 int ls(int argc, char** argv) {
-	int r = send_command(argc, argv);
+	if (argc != 1) {
+		return CMD_WRONG_USAGE;
+	}
+	char buf[MAX_LEN + 1] = { 0 };
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if(send_command(argc, argv) < 0 
+	|| wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME) < 0){
+		sprintf(cmd_error_msg, "ls failed");
+		return CMD_ERROR;
+	}
+
+	printf("%s\n", buf);
 	return 0;
 }
 
 int pwd(int argc, char** argv) {
-	int r = send_command(argc, argv);
+	if (argc != 1) {
+		return CMD_WRONG_USAGE;
+	}
+	
+	char buf[MAX_LEN + 1] = { 0 };
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if(send_command(argc, argv) < 0
+	|| wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME)){
+		sprintf(cmd_error_msg, "pwd failed");
+		return CMD_ERROR;
+	}
+	printf("%s\n", buf);
 	return 0;
 }
 
 int cd(int argc, char** argv) {
-	int r = send_command(argc, argv);
-	return 0;
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
+
+	char buf[MAX_LEN + 1] = { 0 };
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+	extern char PWD[];
+
+	if(send_command(argc, argv) < 0
+	|| wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME) < 0) {
+		sprintf(cmd_error_msg, "cd failed");
+		return CMD_ERROR;
+	}
+	// 路径不可访问
+	int error = 0;
+	if (strlen(buf) != 0) {
+		sprintf(cmd_error_msg, "%s", buf);
+		error = 1;
+	}
+	// 更新当前路径
+	int n =  wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME);
+	strcpy(PWD, buf);
+
+	return error ? CMD_ERROR : 0;
 }
 
 int Mkdir(int argc, char** argv) {
-	int r = send_command(argc, argv);
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
+
+	char buf[MAX_LEN + 1] = { 0 };
+	extern char cmd_msg[];
+	extern char cmd_error_msg[];
+
+	if(send_command(argc, argv)  < 0
+	|| wait_header(client_fd, CMD_COMMAND_HEADER, buf, MAX_TIME) < 0){
+		sprintf(cmd_error_msg, "mkdir failed");
+		return CMD_ERROR;
+	}
+	// 新建文件夹失败(权限)
+	if (strlen(buf) != 0) {
+		sprintf(cmd_error_msg, "%s", buf);
+		return CMD_ERROR;
+	}
 	return 0;
 }
 
 int get(int argc, char** argv) {
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
 	buf_io_t buf_io;
 	buf_io_init(&buf_io, client_fd);
 	char buf[MAX_LEN + 1] = { 0 };
@@ -188,11 +257,17 @@ int put(int argc, char** argv) {
 }
 
 int Delete(int argc, char** argv) {
+	if (argc != 2) {
+		return CMD_WRONG_USAGE;
+	}
 	int r = send_command(argc, argv);
 	return 0;
 }
 
 int quit(int argc, char** argv) {
+	if (argc != 1) {
+		return CMD_WRONG_USAGE;
+	}
 	return CMD_QUIT;
 }
 

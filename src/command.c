@@ -1,5 +1,4 @@
 #include <inc/command.h>
-#include <inc/client/connect.h>
 #include <inc/io.h> 
 #include <inc/utils.h> 
 
@@ -78,6 +77,22 @@ static struct Command *match(char *name) {
 	return NULL;
 }
 
+int exec(int argc, char **argv, char *ret) {
+	char buf[MAX_LEN + 1] = { 0 };
+	sprintf(buf, "%s", argv[0]);
+	for (int i = 1; i < argc; i++) {
+		strcat(buf, " ");
+		strcat(buf, argv[i]);
+	}
+
+	FILE* fp = popen(buf, "r");
+	int n = fread(ret, 1, MAX_LEN, fp);
+	if (n < 0) {
+		return -1;
+	}
+	return 0;
+}
+
 char *check_header(char *buf, const char *header) {
 	char tmp[MAX_LEN + 1] = { 0 };
 	int n = strlen(header);
@@ -93,8 +108,8 @@ char *check_header(char *buf, const char *header) {
 
 int wait_header(int fd, const char *header, char *data, int seconds){
 	int n;
-	char buf[MAX_LEN + 1];
-	int cur = 0;
+	char buf[MAX_LEN + 1] = { 0 };
+	int left = 0, right = 0;
 	char *tmp = NULL;
 	clock_t start_time = clock();
 	while (1) {
@@ -102,16 +117,23 @@ int wait_header(int fd, const char *header, char *data, int seconds){
 		if (seconds >= 0 && (double)(cur_time - start_time) / CLOCKS_PER_SEC > seconds) {
 			return -1;
 		}
-        n = recv(fd, buf + cur, 1, MSG_DONTWAIT);
+        n = recv(fd, buf + right, 1, MSG_DONTWAIT);
 		if (n > 0) {
-			if (buf[cur] == '\n' && (tmp = check_header(buf, header))) {
-				*strchr(tmp, '\n') = 0;
-				if (data) {
-					strcpy(data, tmp);
+			if (buf[right] == '\n') {
+				if ((tmp = check_header(buf + left, header)) != NULL) {
+					*strchr(tmp, '\n') = 0;
+					if (data) {
+						strcpy(data, tmp);
+					}
+					return 0;
+				} else {
+					// 丢弃上一段
+					left = (right + n) % MAX_LEN;
 				}
-				return 0;
-        	}
-			cur = (cur + n) % MAX_LEN;
+			}
+			right = (right + n) % MAX_LEN;
+		} else if (n == 0) {
+			return -1;
 		}
     }
 }

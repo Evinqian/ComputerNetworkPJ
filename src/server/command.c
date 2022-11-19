@@ -7,7 +7,9 @@
 extern int server_fd;
 /* 当前连接文件描述符 */
 extern int conn_fd;
-char PWD[1024] = ".";
+/* 当前目录 */
+extern char PWD[];
+
 /*向客户端发送文件大小*/
 static int send_size(int size){
 	char buf[MAX_LEN + 1] = { 0 };
@@ -16,57 +18,64 @@ static int send_size(int size){
 	return write_n(conn_fd, buf, strlen(buf)); 
 }
 
+/* 向客户端发送字符串 */
+static int send_str(char* str) {
+	char buf[MAX_LEN + 1] = { 0 };
+	strcat(buf, CMD_COMMAND_HEADER);
+	strcat(buf, str);
+	strcat(buf, "\n");
+	return write_n(conn_fd, buf, strlen(buf));
+} 
+
 /* 向客户端发送结束 */
-static int send_fin()
-{
+static int send_fin() {
 	char buf[MAX_LEN + 1] = {0};
 	sprintf(buf, "%s\n", CMD_FIN_HEADER);
 	return write_n(conn_fd, buf, strlen(buf));
 }
 
 int ls(int argc, char** argv) {
-	char ret[MAX_LEN + 1] = { 0 };
-
-	char buf[MAX_LEN + 1];
-	sprintf(buf, "ls %s", PWD);
-    FILE* fp = popen(buf, "r");
-
-    int n = fread(ret, 1, 1024, fp);
-	printf(ret);
-	putchar('\n');
-	// TODO:向客户端发送ret
+	char ret[MAX_LEN + 1] = {0};
+	int r = exec(argc, argv, ret);
+	
+	// 将默认换行符分割改为空格分割以便消息处理
+	int len = strlen(ret);
+	for(int i = 0; i < len; i++){
+		if(ret[i] == '\n') ret[i] = ' ';
+	}
+	printf("%s: %s\n", argv[0], ret);
+	send_str(ret);
 	return 0;
 }
 
 int pwd(int argc, char** argv) {
-	// TODO:向客户端发送PWD
+	printf("%s: %s\n", argv[0], PWD);
+	send_str(PWD);
 	return 0;
 }
 
 int cd(int argc, char** argv) {
-	char ret[1024] = {0};
+	char ret[MAX_LEN + 1] = {0};
+	int r = exec(argc, argv, ret);
+	printf("%s: %s\n", argv[0], ret);
+	send_str(ret);
+	r = chdir(argv[1]);
 
-	char buf[MAX_LEN + 1];
-	sprintf(buf, "cd %s\ncd %s", PWD, argv[1]);
-
-    FILE* fp = popen(buf,"r");
-    int n = fread(ret, 1, 1024, fp);
-	memset(PWD, 0, sizeof(PWD));
-	strcpy(PWD, ret);	// 更新PWD
-	printf(PWD);
-	putchar('\n');
-	// TODO:向客户端发送ret
+	// 再次获取当前路径
+	argv[0] = "pwd";
+	r = exec(1, argv, ret);
+	// 更新PWD
+	strcpy(PWD, ret);
+	// 向客户端发送路径	
+	send_str(PWD);
 	return 0;
 }
 
 int Mkdir(int argc, char** argv) {
-	char ret[MAX_LEN + 1] = { 0 };
-    char buf[MAX_LEN + 1];
-	sprintf(buf, "cd %s\nmkdir %s", PWD, argv[1]);
-	FILE* fp = popen(buf,"r");
-
-    int n = fread(ret,1,1024,fp);
-	//TODO:向客户端发送ret
+	char ret[MAX_LEN + 1] = {0};
+	int r = exec(argc, argv, ret);
+	printf("%s: %s\n", argv[0], ret);
+	r = send_str(ret);
 	return 0;
 }
 
@@ -127,8 +136,7 @@ int get(int argc, char** argv) {
 	return 0;	
 }
 
-int put(int argc, char **argv)
-{
+int put(int argc, char **argv) {
 	buf_io_t buf_io;
 	buf_io_init(&buf_io, conn_fd);
 	char buf[MAX_LEN + 1] = {0};
@@ -196,12 +204,10 @@ int put(int argc, char **argv)
 	return 0;
 }
 
-int Delete(int argc, char **argv)
-{
+int Delete(int argc, char **argv) {
 	return 0;
 }
 
-int quit(int argc, char **argv)
-{
+int quit(int argc, char **argv) {
 	return CMD_QUIT;
 }

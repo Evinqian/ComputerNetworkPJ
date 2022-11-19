@@ -30,14 +30,14 @@ int main(int argc, char **argv){
 
     // 初始化
     init();
-    printf("%s>Hello client!\n", FTP);
+    printf("%s>%s$ Hello client!\n", FTP, PWD);
 
     // 建立连接
     if ((client_fd = Connect(host_name, port)) < 0) {
         printf("Failed to connect to %s:%s\n", host_name, port);
         exit(1);
     }
-    printf("%s>Successfully connect to %s:%s!\n", FTP, host_name, port);
+    printf("%s>%s$ Successfully connect to %s:%s!\n", FTP, PWD, host_name, port);
 
     // 处理连接断开
     signal(SIGPIPE, SIGPIPE_handler);
@@ -48,7 +48,7 @@ int main(int argc, char **argv){
     buf_io_init(&buf_io, client_fd);
 
     while (1) {
-        printf("%s>", FTP);
+        printf("%s>%s$ ", FTP, PWD);
         // 等待用户输入命令
         if (fgets(line, MAX_LINE, stdin) == NULL && ferror(stdin)) {
             break;
@@ -99,6 +99,7 @@ void init(){
         printf("Socket error\n");
         exit(1);
     }
+    strcpy(PWD, "~");
 }
 
 int Connect(char *host_name, char *port){

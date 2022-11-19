@@ -12,6 +12,7 @@
 
 int server_fd;
 int conn_fd;
+char PWD[1024] = "~";
 
 int main(int argc, char **argv) {
 
@@ -35,7 +36,7 @@ int main(int argc, char **argv) {
     while (1) {
         // 与请求方建立连接
         conn_fd = accept(server_fd, (struct sockaddr *) &client_addr, (socklen_t *) &client_len);
-        printf("%s>", FTP_SERVER);
+        printf("%s>%s$ ", FTP_SERVER, PWD);
         if (conn_fd < 0) {
             printf("Accept error\n");
             exit(1);
@@ -50,13 +51,14 @@ int main(int argc, char **argv) {
         char *command = NULL;
 
         while (1) {
+            printf("%s>%s$ Waiting for command...\n", FTP_SERVER, PWD);
             // 阻塞，直到读取到命令
             n = wait_header(conn_fd, CMD_COMMAND_HEADER, buf, -1);  /* 目前不设最大响应时间 */
             if (n < 0) {
-                // 太长时间未响应，断开连接
-                continue;
+                // 太长时间未响应或者客户端断开连接，断开连接
+                break;
             } 
-            printf("%s>Received command: %s\n", FTP_SERVER, buf);
+            printf("%s>%s$ Received command: %s\n", FTP_SERVER, PWD, buf);
 
             // 执行命令
             int argc = 0;
@@ -96,7 +98,7 @@ int Listen(int port){
     server_addr.sin_port = htons((unsigned short) port);
     
     if (bind(server_fd, (struct sockaddr *) &server_addr, sizeof(server_addr)) < 0) {
-        printf("Bind error\n");
+        printf("Port %d has already been used\n", port);
         exit(1);
     }
     // 第二个参数与TCP/IP有关，暂取1024

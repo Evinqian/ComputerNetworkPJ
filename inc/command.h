@@ -30,6 +30,9 @@ char *check_header(char *command, const char *header);
  */
 int wait_header(int fd, const char *header, char *data, int seconds);
 
+/* 执行linux命令 */
+int exec(int argc, char **argv, char *ret);
+
 /* 根据命令行输入并匹配命令 */
 int run_command(char *buf, int* argc, char** argv);
 
