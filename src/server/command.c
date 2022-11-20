@@ -111,7 +111,12 @@ int cd(int fd, int argc, char** argv) {
 
 int Mkdir(int fd, int argc, char** argv) {
 	char ret[MAX_LEN + 1] = {0};
-	int r = exec(argc, argv, ret);
+	mode_t old_mask = umask(0);
+	int r = mkdir(argv[1], S_IRWXU | S_IRWXG | S_IRWXO);
+	if (r < 0) {
+		sprintf(ret, "cannot create directory ‘%s’: File exists", argv[1]);
+	}
+	umask(old_mask);
 	printf("%s: %s\n", argv[0], ret);
 	r = send_str(fd, ret);
 	return 0;

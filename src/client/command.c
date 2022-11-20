@@ -116,7 +116,8 @@ int Mkdir(int fd, int argc, char** argv) {
 	}
 	// 新建文件夹失败(权限)
 	if (strlen(buf) != 0) {
-		printf("%s\n", buf);
+		strcpy(cmd_error_msg, buf);
+		return CMD_ERROR;
 	}
 	return 0;
 }
