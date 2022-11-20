@@ -162,8 +162,9 @@ int get(int fd, int argc, char** argv) {
 	while (success_n < size){
 		clock_t cur_time = clock();
 		if ((double)(cur_time - start_time) / CLOCKS_PER_SEC > MAX_TIME){
-			//超时
-			sprintf(cmd_error_msg, "Time out (max %d second)\n", MAX_TIME);
+			// 超时，删除回滚
+			sprintf(cmd_error_msg, "Time out (max %d seconds)\n", MAX_TIME);
+			remove(file_name);
 			return CMD_ERROR;
 		}
 		int max_len = MAX_LEN;
