@@ -140,13 +140,17 @@ int get(int fd, int argc, char** argv) {
 
 	int r = send_command(fd, argc, argv);
 	  
-	// 阻塞直到找到文件
+	// 阻塞直到等到文件大小
 	n = wait_header(fd, CMD_SIZE_HEADER, buf, MAX_TIME);
 	if (n < 0){
-		sprintf(cmd_error_msg, "File not found");
+		sprintf(cmd_error_msg, "Time out (max %d)\n", MAX_TIME);
 		return CMD_ERROR;
 	}
 	size = atoi(buf);
+	if (size < 0){
+		sprintf(cmd_error_msg, "File not found: %s", argv[1]);
+		return CMD_ERROR;
+	}
 	printf("Ready to get %d bytes\n",size);
 
 	// 写入文件

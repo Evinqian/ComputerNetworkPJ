@@ -129,6 +129,8 @@ int get(int fd, int argc, char** argv) {
 	int in_fd = open(in_name, O_RDONLY);
 	if (in_fd < 0){
 		sprintf(cmd_error_msg, "Can't access to '%s': No such file or directory", in_name);
+		// 传送-1作为大写以告知不存在
+		int r = send_size(fd, -1);
 		return CMD_ERROR;
 	}
 

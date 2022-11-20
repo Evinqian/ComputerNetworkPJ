@@ -16,6 +16,7 @@
 ```
 ## 测试
 ```bash
+    sudo apt-get install gcc-multilib
     make
     Terminal1:~$ .server/ftp-server <port>
     Terminal2:~$ ./ftp <IP> <port>
